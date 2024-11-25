@@ -4,13 +4,16 @@ import java.util.*;
 import java.util.concurrent.*;
 
 public class TicTacToeServer {
+    // 방 정보를 저장하는 ConcurrentHashMap으로 다중 스레드 환경에서도 안전하게 관리
     private static Map<String, RoomThread> rooms = new ConcurrentHashMap<>();
 
     public static void main(String[] args) {
         try (ServerSocket serverSocket = new ServerSocket(12345)) {
             System.out.println("Server started. Waiting for clients...");
             while (true) {
+                // 클라이언트 연결을 기다림
                 Socket clientSocket = serverSocket.accept();
+                // 연결된 클라이언트를 처리하기 위해 새로운 스레드 생성
                 new Thread(new ClientHandler(clientSocket)).start();
             }
         } catch (IOException e) {
@@ -18,6 +21,7 @@ public class TicTacToeServer {
         }
     }
 
+    // 개별 클라이언트를 처리하는 스레드
     static class ClientHandler implements Runnable {
         private Socket socket;
         private PrintWriter out;
@@ -30,14 +34,16 @@ public class TicTacToeServer {
         @Override
         public void run() {
             try {
+                // 클라이언트와 통신을 위한 스트림 설정
                 in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 out = new PrintWriter(socket.getOutputStream(), true);
 
                 String input;
+                // 클라이언트로부터 메시지를 읽어서 처리
                 while ((input = in.readLine()) != null) {
-                    String[] parts = input.split(" ", 2);
+                    String[] parts = input.split(" ", 2); // 명령어와 인자를 분리
                     String command = parts[0];
-                    String argument = parts.length > 1 ? parts[1] : "";
+                    String argument = parts.length > 1 ? parts[1] : ""; // 인자가 없을 경우 빈 문자열
 
                     switch (command) {
                         case "CREATE":
@@ -50,7 +56,7 @@ public class TicTacToeServer {
                             handleMove(argument);
                             break;
                         default:
-                            out.println("ERROR Unknown command.");
+                            out.println("ERROR Unknown command."); // 알 수 없는 명령어에 대한 응답
                             break;
                     }
                 }
@@ -58,6 +64,7 @@ public class TicTacToeServer {
                 e.printStackTrace();
             } finally {
                 try {
+                    // 클라이언트 연결 종료
                     socket.close();
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -66,47 +73,52 @@ public class TicTacToeServer {
         }
 
         private void createRoom(String roomName) {
+            // 방 생성: 고유한 ID를 생성하여 새로운 방을 생성
             String roomId = UUID.randomUUID().toString();
             RoomThread room = new RoomThread(roomId);
-            rooms.put(roomId, room);
-            new Thread(room).start();
-            out.println("ROOM_CREATED " + roomId);
+            rooms.put(roomId, room); // 생성된 방을 방 목록에 추가
+            new Thread(room).start(); // 방 스레드 시작
+            out.println("ROOM_CREATED " + roomId); // 클라이언트에 방 ID 전송
         }
 
         private void joinRoom(String roomId) {
+            // 클라이언트가 특정 방에 참가하려는 요청 처리
             RoomThread room = rooms.get(roomId);
             if (room != null) {
-                room.addClient(socket, out);
+                room.addClient(socket, out); // 방에 클라이언트 추가
             } else {
-                out.println("ERROR Room not found.");
+                out.println("ERROR Room not found."); // 방이 존재하지 않을 경우 에러 메시지 전송
             }
         }
 
         private void handleMove(String move) {
-            // Handle move logic here based on the game state
+            // 클라이언트의 MOVE 명령 처리 (구현 필요)
+            // 틱택토 게임 로직에 따라 현재 상태를 업데이트
         }
     }
 
+    // 방을 관리하는 스레드
     static class RoomThread implements Runnable {
-        private String roomId;
-        private List<PrintWriter> clients = new ArrayList<>();
-        private char[][] board = new char[3][3];
-        private char currentPlayer = 'X';
+        private String roomId; // 방 ID
+        private List<PrintWriter> clients = new ArrayList<>(); // 방에 연결된 클라이언트 목록
+        private char[][] board = new char[3][3]; // 틱택토 보드
+        private char currentPlayer = 'X'; // 현재 차례의 플레이어 ('X' 또는 'O')
 
         public RoomThread(String roomId) {
             this.roomId = roomId;
         }
 
         public void addClient(Socket socket, PrintWriter out) {
+            // 방에 클라이언트를 추가
             synchronized (clients) {
                 clients.add(out);
-                out.println("JOINED " + roomId);
+                out.println("JOINED " + roomId); // 참가 성공 메시지 전송
             }
         }
 
         @Override
         public void run() {
-            // Game logic goes here (e.g., turn handling, win condition checking)
+            // 방 내에서 게임 로직 처리 (게임 상태 업데이트, 턴 관리 등)
         }
     }
 }
