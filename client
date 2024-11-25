@@ -1,0 +1,70 @@
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.io.*;
+import java.net.*;
+
+public class TicTacToeClient {
+    private Socket socket;
+    private PrintWriter out;
+    private BufferedReader in;
+
+    private JFrame frame;
+    private JButton[][] buttons = new JButton[3][3];
+    private String roomId;
+
+    public TicTacToeClient(String serverAddress, int port) {
+        try {
+            socket = new Socket(serverAddress, port);
+            out = new PrintWriter(socket.getOutputStream(), true);
+            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+
+            setupGUI();
+            listenForServerMessages();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void setupGUI() {
+        frame = new JFrame("Tic Tac Toe");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setSize(300, 300);
+
+        JPanel panel = new JPanel(new GridLayout(3, 3));
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                buttons[i][j] = new JButton("");
+                final int x = i, y = j;
+                buttons[i][j].addActionListener(e -> makeMove(x, y));
+                panel.add(buttons[i][j]);
+            }
+        }
+
+        frame.add(panel);
+        frame.setVisible(true);
+    }
+
+    private void makeMove(int x, int y) {
+        out.println("MOVE " + x + "," + y);
+    }
+
+    private void listenForServerMessages() {
+        new Thread(() -> {
+            try {
+                String message;
+                while ((message = in.readLine()) != null) {
+                    // Handle server messages (e.g., board updates, results)
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }).start();
+    }
+
+    public static void main(String[] args) {
+        String serverAddress = JOptionPane.showInputDialog("Enter Server Address:");
+        new TicTacToeClient(serverAddress, 12345);
+    }
+}
