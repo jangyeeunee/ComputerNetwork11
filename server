@@ -1,0 +1,112 @@
+import java.io.*;
+import java.net.*;
+import java.util.*;
+import java.util.concurrent.*;
+
+public class TicTacToeServer {
+    private static Map<String, RoomThread> rooms = new ConcurrentHashMap<>();
+
+    public static void main(String[] args) {
+        try (ServerSocket serverSocket = new ServerSocket(12345)) {
+            System.out.println("Server started. Waiting for clients...");
+            while (true) {
+                Socket clientSocket = serverSocket.accept();
+                new Thread(new ClientHandler(clientSocket)).start();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    static class ClientHandler implements Runnable {
+        private Socket socket;
+        private PrintWriter out;
+        private BufferedReader in;
+
+        public ClientHandler(Socket socket) {
+            this.socket = socket;
+        }
+
+        @Override
+        public void run() {
+            try {
+                in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                out = new PrintWriter(socket.getOutputStream(), true);
+
+                String input;
+                while ((input = in.readLine()) != null) {
+                    String[] parts = input.split(" ", 2);
+                    String command = parts[0];
+                    String argument = parts.length > 1 ? parts[1] : "";
+
+                    switch (command) {
+                        case "CREATE":
+                            createRoom(argument);
+                            break;
+                        case "JOIN":
+                            joinRoom(argument);
+                            break;
+                        case "MOVE":
+                            handleMove(argument);
+                            break;
+                        default:
+                            out.println("ERROR Unknown command.");
+                            break;
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            } finally {
+                try {
+                    socket.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        private void createRoom(String roomName) {
+            String roomId = UUID.randomUUID().toString();
+            RoomThread room = new RoomThread(roomId);
+            rooms.put(roomId, room);
+            new Thread(room).start();
+            out.println("ROOM_CREATED " + roomId);
+        }
+
+        private void joinRoom(String roomId) {
+            RoomThread room = rooms.get(roomId);
+            if (room != null) {
+                room.addClient(socket, out);
+            } else {
+                out.println("ERROR Room not found.");
+            }
+        }
+
+        private void handleMove(String move) {
+            // Handle move logic here based on the game state
+        }
+    }
+
+    static class RoomThread implements Runnable {
+        private String roomId;
+        private List<PrintWriter> clients = new ArrayList<>();
+        private char[][] board = new char[3][3];
+        private char currentPlayer = 'X';
+
+        public RoomThread(String roomId) {
+            this.roomId = roomId;
+        }
+
+        public void addClient(Socket socket, PrintWriter out) {
+            synchronized (clients) {
+                clients.add(out);
+                out.println("JOINED " + roomId);
+            }
+        }
+
+        @Override
+        public void run() {
+            // Game logic goes here (e.g., turn handling, win condition checking)
+        }
+    }
+}
