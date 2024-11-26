@@ -1,0 +1,118 @@
+import java.io.PrintWriter;
+import java.util.List;
+
+public class RoomThread implements Runnable {
+    private String roomId; // 방 ID
+    private List<PrintWriter> clients; // 방에 연결된 클라이언트 목록
+    private char[][] board = new char[3][3]; // 틱택토 보드
+    private char currentPlayer = 'X'; // 현재 차례의 플레이어 ('X' 또는 'O')
+    private boolean gameInProgress = true; // 게임 진행 상태 플래그 (게임 시작 시 true)
+
+    public RoomThread(String roomId, List<PrintWriter> clients) {
+        this.roomId = roomId;
+        this.clients = clients;
+        // 보드 초기화
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                board[i][j] = ' ';
+            }
+        }
+    }
+
+    @Override
+    public void run() {
+        // 게임 스레드 로직 (특별한 동작 필요 없음)
+    }
+
+    // MOVE 명령을 처리하는 메서드
+    public synchronized void processMove(PrintWriter playerOut, String move) {
+        if (!gameInProgress) {
+            playerOut.println("ERROR Game is not in progress.");
+            return;
+        }
+
+        String[] parts = move.split(",");
+        if (parts.length != 2) {
+            playerOut.println("ERROR Invalid move format.");
+            return;
+        }
+
+        int x, y;
+        try {
+            x = Integer.parseInt(parts[0]);
+            y = Integer.parseInt(parts[1]);
+        } catch (NumberFormatException e) {
+            playerOut.println("ERROR Invalid move coordinates.");
+            return;
+        }
+
+        if (x < 0 || x >= 3 || y < 0 || y >= 3 || board[x][y] != ' ') {
+            playerOut.println("ERROR Invalid move.");
+            return;
+        }
+
+        // 유효한 움직임이면 보드 업데이트
+        board[x][y] = currentPlayer;
+        broadcast("MOVE " + x + "," + y + " " + currentPlayer);
+
+        // 승리 조건 확인(플레이어 중 누군가가 승리 조건을 만족했다면, 플레이어의 승리를 선언한다.)
+        if (checkWin(currentPlayer)) {
+            broadcast("RESULT " + currentPlayer + " wins!");
+            gameInProgress = false;
+            closeConnections();
+            return;
+        }
+
+        // 무승부 조건 확인
+        if (isBoardFull()) {  //승리 조건을 만족시키지 않았는데 보드가 다 찼다면, Draw 처리를 한다.
+            broadcast("RESULT Draw!");
+            gameInProgress = false;
+            closeConnections();
+            return;
+        }
+
+        // 턴 교대가 들어가는 부분
+        currentPlayer = (currentPlayer == 'X') ? 'O' : 'X';
+        broadcast("TURN " + currentPlayer);
+    }
+
+    private boolean checkWin(char player) {
+        // 승리 조건 확인(같은 행 또는 같은 열을 채웠다면 승리)
+        for (int i = 0; i < 3; i++) {
+            if ((board[i][0] == player && board[i][1] == player && board[i][2] == player) || // 행
+                (board[0][i] == player && board[1][i] == player && board[2][i] == player)) { // 열
+                return true;
+            }
+        }
+        // 대각선
+        return (board[0][0] == player && board[1][1] == player && board[2][2] == player) ||
+               (board[0][2] == player && board[1][1] == player && board[2][0] == player);
+    }
+
+    private boolean isBoardFull() {
+        // 보드가 가득 찼는지 확인
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                if (board[i][j] == ' ') {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    private void broadcast(String message) {
+        // 방 내 모든 클라이언트에게 메시지 전송
+        for (PrintWriter client : clients) {
+            client.println(message);
+        }
+    }
+
+    private void closeConnections() {
+        // 게임 종료 후 모든 클라이언트 연결 해제
+        for (PrintWriter client : clients) {
+            client.close();
+        }
+        clients.clear();
+    }
+}
