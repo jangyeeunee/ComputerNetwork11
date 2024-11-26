@@ -11,7 +11,8 @@ public class TicTacToeClient {
 
     private JFrame frame;
     private JButton[][] buttons = new JButton[3][3]; // 틱택토 보드 버튼
-    private String roomId; // 클라이언트가 연결된 방 ID
+    private JLabel statusLabel; // 현재 상태를 표시하는 라벨
+    private String currentPlayer = "X"; // 현재 플레이어 ('X' 또는 'O')
 
     public TicTacToeClient(String serverAddress, int port) {
         try {
@@ -24,6 +25,7 @@ public class TicTacToeClient {
             listenForServerMessages(); // 서버 메시지 처리 스레드 시작
 
         } catch (IOException e) {
+            JOptionPane.showMessageDialog(null, "Unable to connect to the server.");
             e.printStackTrace();
         }
     }
@@ -32,12 +34,19 @@ public class TicTacToeClient {
         // 틱택토 GUI 생성
         frame = new JFrame("Tic Tac Toe");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(300, 300);
+        frame.setSize(400, 400);
 
+        // 상태 표시 라벨 추가
+        statusLabel = new JLabel("Connecting to the server...");
+        statusLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        frame.add(statusLabel, BorderLayout.NORTH);
+
+        // 틱택토 보드 패널 생성
         JPanel panel = new JPanel(new GridLayout(3, 3));
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
                 buttons[i][j] = new JButton("");
+                buttons[i][j].setFont(new Font("Arial", Font.PLAIN, 40));
                 final int x = i, y = j;
                 // 버튼 클릭 이벤트 처리
                 buttons[i][j].addActionListener(e -> makeMove(x, y));
@@ -45,13 +54,17 @@ public class TicTacToeClient {
             }
         }
 
-        frame.add(panel);
+        frame.add(panel, BorderLayout.CENTER);
         frame.setVisible(true);
     }
 
     private void makeMove(int x, int y) {
         // 사용자가 특정 위치를 클릭했을 때 서버로 MOVE 명령 전송
-        out.println("MOVE " + x + "," + y);
+        if (!buttons[x][y].getText().isEmpty()) {
+            JOptionPane.showMessageDialog(frame, "Invalid move! Cell already occupied.");
+            return;
+        }
+        out.println("MOVE " + x + "," + y); // 서버로 MOVE 명령 전송
     }
 
     private void listenForServerMessages() {
@@ -60,12 +73,60 @@ public class TicTacToeClient {
             try {
                 String message;
                 while ((message = in.readLine()) != null) {
-                    // 서버 메시지 처리 (예: 보드 업데이트, 결과 표시)
+                    processServerMessage(message); // 서버 메시지를 처리
                 }
             } catch (IOException e) {
+                JOptionPane.showMessageDialog(frame, "Disconnected from server.");
                 e.printStackTrace();
             }
         }).start();
+    }
+
+    private void processServerMessage(String message) {
+        // 서버 메시지 처리
+        String[] parts = message.split(" ", 2);
+        String command = parts[0];
+
+        switch (command) {
+            case "MOVE": // MOVE x,y player
+                String[] moveParts = parts[1].split(" ");
+                String[] coordinates = moveParts[0].split(",");
+                int x = Integer.parseInt(coordinates[0]);
+                int y = Integer.parseInt(coordinates[1]);
+                String player = moveParts[1];
+
+                buttons[x][y].setText(player);
+                break;
+
+            case "TURN": // TURN player
+                currentPlayer = parts[1];
+                statusLabel.setText("Your turn: " + currentPlayer);
+                break;
+
+            case "RESULT": // RESULT result
+                statusLabel.setText(parts[1]); // 결과 표시
+                JOptionPane.showMessageDialog(frame, parts[1]);
+                disableBoard();
+                break;
+
+            case "GAME_START": // GAME_START X
+                currentPlayer = parts[1];
+                statusLabel.setText("Game started! Your turn: " + currentPlayer);
+                break;
+
+            default:
+                System.out.println("Unknown message from server: " + message);
+                break;
+        }
+    }
+
+    private void disableBoard() {
+        // 게임이 종료되었을 때 모든 버튼 비활성화
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                buttons[i][j].setEnabled(false);
+            }
+        }
     }
 
     public static void main(String[] args) {
