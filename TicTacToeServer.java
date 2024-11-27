@@ -11,6 +11,7 @@ public class TicTacToeServer {
             System.out.println("Server started. Waiting for clients...");
             while (true) {
                 Socket clientSocket = serverSocket.accept();
+                // 새로운 클라이언트 연결 시 핸들러 스레드 생성
                 new Thread(new ClientHandler(clientSocket)).start();
             }
         } catch (IOException e) {
@@ -18,6 +19,7 @@ public class TicTacToeServer {
         }
     }
 
+    // 클라이언트와의 통신을 처리하는 핸들러 클래스
     static class ClientHandler implements Runnable {
         private Socket socket;
         private PrintWriter out;
@@ -31,11 +33,13 @@ public class TicTacToeServer {
         @Override
         public void run() {
             try {
+                // 클라이언트와 입출력 스트림 연결
                 in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 out = new PrintWriter(socket.getOutputStream(), true);
 
                 String input;
                 while ((input = in.readLine()) != null) {
+                    // 명령과 인자를 분리
                     String[] parts = input.split(" ", 2);
                     String command = parts[0];
                     String argument = parts.length > 1 ? parts[1] : "";
@@ -56,12 +60,11 @@ public class TicTacToeServer {
                     }
                 }
             } catch (IOException e) {
+                // 클라이언트가 연결을 끊었을 때 처리
                 if (joinedRoom != null) {
                     joinedRoom.removeClient(out);
                 }
                 System.out.println("Client disconnected");
-
-                //e.printStackTrace();
             } finally {
                 try {
                     socket.close();
@@ -71,23 +74,27 @@ public class TicTacToeServer {
             }
         }
 
-        private static int roomCounter = 1;  // 방 번호를 추적하는 정적 변수
+        private static int roomCounter = 1; // 방 번호를 추적하는 정적 변수
 
+        // 방을 생성하는 메서드
         private void createRoom(String roomName) {
             String roomId = String.valueOf(roomCounter++);
             RoomThread room = new RoomThread(roomId);
             rooms.put(roomId, room);
 
-            // 디버깅 출력
+            // 방 생성 디버깅 메시지 출력
             System.out.println("Room created with ID: " + roomId);
 
+            // 방 스레드 실행
             new Thread(room).start();
 
             out.println("ROOM_CREATED " + roomId);
-            joinRoom(roomId); // 방 생성 후 자동 참가
+
+            // 방 생성 후 자동으로 참가
+            joinRoom(roomId);
         }
 
-
+        // 방에 참가하는 메서드
         private void joinRoom(String roomId) {
             RoomThread room = rooms.get(roomId);
             if (room != null) {
@@ -103,7 +110,7 @@ public class TicTacToeServer {
             }
         }
 
-
+        // 클라이언트의 MOVE 명령을 처리하는 메서드
         private void handleMove(String move) {
             if (joinedRoom != null) {
                 joinedRoom.processMove(out, move);
@@ -113,77 +120,79 @@ public class TicTacToeServer {
         }
     }
 
+    // 방의 상태를 관리하는 클래스
     static class RoomThread implements Runnable {
-        private String roomId;
-        private List<Socket> clients = new ArrayList<>();
-        private List<PrintWriter> outputs = new ArrayList<>();
-        private GameLogic gameLogic = new GameLogic();  // GameLogic 객체로 교체
-        private int currentPlayer = 0;
+        private String roomId; // 방 ID
+        private List<PrintWriter> clients = new ArrayList<>(); // 방에 연결된 클라이언트 목록
+        private GameLogic gameLogic = new GameLogic(); // 게임 로직 관리 객체
+        private int currentPlayer = 0; // 현재 차례의 플레이어 인덱스
 
         public RoomThread(String roomId) {
             this.roomId = roomId;
         }
 
-        public synchronized boolean addClient(Socket clientSocket, PrintWriter out) {
-            if (clients.size() < 2) {
-                clients.add(clientSocket);
-                outputs.add(out);
-                out.println("GAME_START " + (clients.size() == 1 ? "X" : "O"));
-                if (clients.size() == 2) {
-                    broadcast("TURN X");
-                }
-                return true;
+        // 클라이언트를 방에 추가하는 메서드
+        public synchronized boolean addClient(Socket socket, PrintWriter out) {
+            if (clients.size() >= 2) {
+                System.out.println("Room ID: " + roomId + ", client size: " + clients.size() + " - Room full");
+                return false;
             }
-            return false;
+            clients.add(out);
+            System.out.println("Room ID: " + roomId + ", client added, current size: " + clients.size());
+            out.println("JOINED " + roomId);
+
+            if (clients.size() == 2) {
+                broadcast("GAME_START X");
+                System.out.println("Room ID: " + roomId + " - Game started");
+                broadcast("TURN X");
+            }
+            return true;
         }
 
+        // 클라이언트를 방에서 제거하는 메서드
         public synchronized void removeClient(PrintWriter out) {
-            int index = outputs.indexOf(out);
-            if (index != -1) {
-                clients.remove(index);
-                outputs.remove(index);
-                broadcast("RESULT Opponent left the game.");
+            clients.remove(out);
+            if (clients.isEmpty()) {
+                System.out.println("Room ID: " + roomId + " - All clients disconnected");
             }
         }
 
+        // MOVE 명령을 처리하는 메서드
         public synchronized void processMove(PrintWriter out, String move) {
             String[] parts = move.split(",");
-            int x = Integer.parseInt(parts[0]);
-            int y = Integer.parseInt(parts[1]);
+            int row = Integer.parseInt(parts[0]);
+            int col = Integer.parseInt(parts[1]);
 
-            if (!gameLogic.makeMove(x, y)) {
-                out.println("ERROR Invalid move. Cell already occupied.");
+            if (!gameLogic.makeMove(row, col)) {
+                out.println("ERROR Invalid move.");
                 return;
             }
 
-            String player = currentPlayer == 0 ? "X" : "O";
-            broadcast("MOVE " + x + "," + y + " " + player);
+            char currentPlayerChar = gameLogic.getCurrentPlayer();
+            broadcast("MOVE " + row + "," + col + " " + currentPlayerChar);
 
-            if (gameLogic.checkWin(x, y)) {
-                broadcast("RESULT " + player + " wins!");
-                resetGame();
-                return;
-            }
-
-            if (gameLogic.isBoardFull()) {
+            if (gameLogic.checkWin(row, col)) {
+                broadcast("RESULT " + currentPlayerChar + " wins!");
+                resetRoom();
+            } else if (gameLogic.isBoardFull()) {
                 broadcast("RESULT Draw!");
-                resetGame();
-                return;
+                resetRoom();
+            } else {
+                gameLogic.switchPlayer();
+                broadcast("TURN " + gameLogic.getCurrentPlayer());
             }
-
-            currentPlayer = 1 - currentPlayer;
-            broadcast("TURN " + (currentPlayer == 0 ? "X" : "O"));
         }
 
+        // 방에 메시지를 전송하는 메서드
         private void broadcast(String message) {
-            for (PrintWriter out : outputs) {
-                out.println(message);
+            for (PrintWriter client : clients) {
+                client.println(message);
             }
         }
 
-        private void resetGame() {
+        // 게임을 초기화하는 메서드
+        private void resetRoom() {
             gameLogic.resetBoard();
-            currentPlayer = 0;
             broadcast("RESET");
         }
 
