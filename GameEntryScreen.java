@@ -76,6 +76,7 @@ public class GameEntryScreen extends JFrame {
      */
     private void onCreateRoom() {
         out.println("CREATE"); // 서버에 방 생성 요청
+        System.out.println("Sent CREATE to server");
         new LoadingScreen(out, in, "Creating room... Please wait.").setVisible(true); // 메시지 추가
         dispose(); // 현재 창 닫기
     }
@@ -87,6 +88,7 @@ public class GameEntryScreen extends JFrame {
         String roomId = roomIdField.getText().trim();
         if (!roomId.isEmpty()) {
             out.println("JOIN " + roomId); // 서버에 방 참가 요청
+            System.out.println("Sent JOIN " + roomId + " to server");
             new LoadingScreen(out, in, "Joining room " + roomId + "... Please wait.").setVisible(true); // 메시지 추가
             dispose(); // 현재 창 닫기
         } else {
