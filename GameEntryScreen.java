@@ -2,15 +2,25 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.BufferedReader;
+import java.io.PrintWriter;
 
 /**
  * 게임 입장 화면 클래스
  * 사용자에게 방 생성 또는 방 참가 옵션 제공
  */
 public class GameEntryScreen extends JFrame {
+    private PrintWriter out; // 서버로 메세지를 전송하는 객체
+    private BufferedReader in; // 서버로부터 메세지를 수신하는 객체
+
     private JTextField roomIdField; // 방 ID 입력 필드
 
-    public GameEntryScreen() {
+    public GameEntryScreen(PrintWriter out, BufferedReader in) {
+
+        // 서버 스트림 객체를 클래스 변수에 저장
+        this.out = out;
+        this.in = in;
+
         // 프레임 설정
         setTitle("Tic Tac Toe - Game Entry");
         setDefaultCloseOperation(EXIT_ON_CLOSE);
@@ -65,9 +75,9 @@ public class GameEntryScreen extends JFrame {
      * "방 생성" 버튼 클릭 시 호출되는 메서드
      */
     private void onCreateRoom() {
-        // 현재는 서버 통신 없이 로딩 화면으로 이동
-        System.out.println("Create Room clicked!");
-        showLoadingScreen("Creating Room...");
+        out.println("CREATE"); // 서버에 방 생성 요청
+        new LoadingScreen(out,in); // 로딩 화면으로 이동
+        dispose(); // 현재 창 닫기
     }
 
     /**
@@ -76,12 +86,12 @@ public class GameEntryScreen extends JFrame {
     private void onJoinRoom() {
         String roomId = roomIdField.getText().trim();
         if (roomId.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Please enter a Room ID to join.");
+            JOptionPane.showMessageDialog(this, "Please enter a Room ID.");
             return;
         }
-        // 현재는 서버 통신 없이 로딩 화면으로 이동
-        System.out.println("Join Room clicked! Room ID: " + roomId);
-        showLoadingScreen("Joining Room...");
+        out.println("JOIN " + roomId); // 서버에 방 참가 요청
+        new LoadingScreen(out,in); // 로딩 화면으로 이동
+        dispose(); // 현재 창 닫기
     }
 
     /**
