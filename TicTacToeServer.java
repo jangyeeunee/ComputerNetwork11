@@ -74,29 +74,27 @@ public class TicTacToeServer {
         private static int roomCounter = 1;  // 방 번호를 추적하는 정적 변수
 
         private void createRoom(String roomName) {
-            //String roomId = UUID.randomUUID().toString();
             String roomId = String.valueOf(roomCounter++);
-
-            // 새로운 방 생성
             RoomThread room = new RoomThread(roomId);
             rooms.put(roomId, room);
 
-            // 스레드 실행
+            // 디버깅 출력
+            System.out.println("Room created with ID: " + roomId);
+
             new Thread(room).start();
 
-            // 클라이언트에 방 생성 알림
             out.println("ROOM_CREATED " + roomId);
-
-            // 방에 자동 참가
-            joinRoom(roomId);
+            joinRoom(roomId); // 방 생성 후 자동 참가
         }
+
 
         private void joinRoom(String roomId) {
             RoomThread room = rooms.get(roomId);
             if (room != null) {
                 if (room.addClient(socket, out)) {
                     joinedRoom = room;
-                    out.println("JOINED " + roomId); // 성공 메시지
+                    out.println("JOINED " + roomId);
+                    System.out.println("Client joined room: " + roomId);
                 } else {
                     out.println("ERROR Room is full or game in progress.");
                 }
@@ -104,6 +102,7 @@ public class TicTacToeServer {
                 out.println("ERROR Room not found.");
             }
         }
+
 
         private void handleMove(String move) {
             if (joinedRoom != null) {

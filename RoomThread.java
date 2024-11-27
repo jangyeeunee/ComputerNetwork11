@@ -14,16 +14,20 @@ public class RoomThread implements Runnable {
 
     public synchronized boolean addClient(Socket socket, PrintWriter out) {
         if (clients.size() >= 2) {
-            return false; // 방이 가득 찼을 경우
+            System.out.println("Room ID: " + roomId + ", client size: " + clients.size() + " - Room full");
+            return false;
         }
         clients.add(out);
+        System.out.println("Room ID: " + roomId + ", client added, current size: " + clients.size());
         out.println("JOINED " + roomId);
 
         if (clients.size() == 2) {
-            broadcast("GAME_START X"); // 두 명이 모두 참여하면 게임 시작
+            broadcast("GAME_START X");
+            System.out.println("Room ID: " + roomId + " - Game started");
         }
         return true;
     }
+
 
     public synchronized void removeClient(PrintWriter out) {
         clients.remove(out); // 클라이언트를 방에서 제거
