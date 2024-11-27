@@ -63,11 +63,21 @@ public class GameLogic {
         return true;
     }
 
-    public void updateScore() {
+    public void incrementPlayer1Score() {
+        player1Score++;
+    }
+
+    public void incrementPlayer2Score() {
+        player2Score++;
+    }
+
+    public String updateScoreAndReturnWinner() {
         if (currentPlayer == 'X') {
             player1Score++;
+            return "Player 1 (X)";
         } else {
             player2Score++;
+            return "Player 2 (O)";
         }
     }
 }
