@@ -18,7 +18,7 @@ public class BoardPage extends JFrame {
         this.in = in;
 
         setTitle("Tic Tac Toe");
-        setSize(800, 750);
+        setSize(500, 550);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 
