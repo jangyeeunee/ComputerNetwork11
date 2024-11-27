@@ -103,8 +103,9 @@ public class BoardPage extends JFrame {
             try {
                 String message;
                 while ((message = in.readLine()) != null) {
-                    if (message.startsWith("MOVE")) {
-                        String[] parts = message.split(" ");
+                    String finalMessage = message; // 람다 내에서 사용할 임시 변수 생성
+                    if (finalMessage.startsWith("MOVE")) {
+                        String[] parts = finalMessage.split(" ");
                         String[] coords = parts[1].split(",");
                         int row = Integer.parseInt(coords[0]);
                         int col = Integer.parseInt(coords[1]);
@@ -112,13 +113,15 @@ public class BoardPage extends JFrame {
 
                         gameLogic.getBoard()[row][col] = player; // 보드 업데이트
                         SwingUtilities.invokeLater(() -> boardPanel.repaint());
-                    } else if (message.startsWith("TURN")) {
-                        String nextPlayer = message.split(" ")[1];
+                    } else if (finalMessage.startsWith("TURN")) {
+                        String nextPlayer = finalMessage.split(" ")[1];
                         SwingUtilities.invokeLater(() ->
-                                statusLabel.setText("Player " + nextPlayer + "'s Turn"));
-                    } else if (message.startsWith("RESULT")) {
+                                statusLabel.setText("Player " + nextPlayer + "'s Turn")
+                        );
+                    } else if (finalMessage.startsWith("RESULT")) {
                         SwingUtilities.invokeLater(() ->
-                                JOptionPane.showMessageDialog(this, message.substring(7)));
+                                JOptionPane.showMessageDialog(this, finalMessage.substring(7))
+                        );
                         break;
                     }
                 }
@@ -127,6 +130,7 @@ public class BoardPage extends JFrame {
             }
         }).start();
     }
+
 
 
 
