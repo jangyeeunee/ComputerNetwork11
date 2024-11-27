@@ -2,8 +2,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.BufferedReader;
-import java.io.PrintWriter;
+import java.io.*;
+import java.net.Socket;
 
 /**
  * 게임 입장 화면 클래스
@@ -76,7 +76,7 @@ public class GameEntryScreen extends JFrame {
      */
     private void onCreateRoom() {
         out.println("CREATE"); // 서버에 방 생성 요청
-        new LoadingScreen(out,in); // 로딩 화면으로 이동
+        new LoadingScreen(out, in, "Creating room... Please wait.").setVisible(true); // 메시지 추가
         dispose(); // 현재 창 닫기
     }
 
@@ -85,31 +85,35 @@ public class GameEntryScreen extends JFrame {
      */
     private void onJoinRoom() {
         String roomId = roomIdField.getText().trim();
-        if (roomId.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Please enter a Room ID.");
-            return;
+        if (!roomId.isEmpty()) {
+            out.println("JOIN " + roomId); // 서버에 방 참가 요청
+            new LoadingScreen(out, in, "Joining room " + roomId + "... Please wait.").setVisible(true); // 메시지 추가
+            dispose(); // 현재 창 닫기
+        } else {
+            JOptionPane.showMessageDialog(this, "Please enter a valid room ID.");
         }
-        out.println("JOIN " + roomId); // 서버에 방 참가 요청
-        new LoadingScreen(out,in); // 로딩 화면으로 이동
-        dispose(); // 현재 창 닫기
     }
-
     /**
      * 로딩 화면을 표시하는 메서드
      * @param message 로딩 화면에 표시할 메시지
      */
     private void showLoadingScreen(String message) {
-        new LoadingScreen(message);
+        new LoadingScreen(out,in,message);
         this.dispose(); // 입장 화면 닫기
     }
 
     public static void main(String[] args) {
-        // 이벤트 디스패치 스레드에서 GUI 생성
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                new GameEntryScreen();
-            }
-        });
+        try {
+            // 서버와 연결 초기화
+            Socket socket = new Socket("localhost", 1234);
+            PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+
+            // GUI 생성
+            SwingUtilities.invokeLater(() -> new GameEntryScreen(out, in));
+        } catch (IOException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(null, "Unable to connect to the server.");
+        }
     }
-}
+    }

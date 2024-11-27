@@ -11,7 +11,7 @@ public class LoadingScreen extends JFrame {
     private PrintWriter out;
     private BufferedReader in;
 
-    public LoadingScreen(PrintWriter out,BufferedReader in) {
+    public LoadingScreen(PrintWriter out,BufferedReader in,String message) {
         this.out=out;
         this.in=in;
 
@@ -21,7 +21,7 @@ public class LoadingScreen extends JFrame {
         setLayout(new BorderLayout());
 
         // 로딩 메시지 라벨
-        JLabel loadingLabel = new JLabel("Loading... Waiting for another player", SwingConstants.CENTER);
+        JLabel loadingLabel = new JLabel(message, SwingConstants.CENTER);
         loadingLabel.setFont(new Font("Arial", Font.BOLD, 20));
         add(loadingLabel, BorderLayout.NORTH);
 
@@ -31,9 +31,9 @@ public class LoadingScreen extends JFrame {
         add(progressBar, BorderLayout.CENTER);
 
         // 추가 안내 메시지
-        JLabel tipLabel = new JLabel("Please wait while we prepare the game...", SwingConstants.CENTER);
-        tipLabel.setFont(new Font("Arial", Font.ITALIC, 14));
-        add(tipLabel, BorderLayout.SOUTH);
+//        JLabel tipLabel = new JLabel("Please wait while we prepare the game...", SwingConstants.CENTER);
+//        tipLabel.setFont(new Font("Arial", Font.ITALIC, 14));
+//        add(tipLabel, BorderLayout.SOUTH);
 
         // 프레임 설정 마무리
         setSize(400, 200);
@@ -44,6 +44,7 @@ public class LoadingScreen extends JFrame {
         WaitForGameStart();
     }
 
+    // 서버 메시지에 따라 BoardPage로 전환
     private void WaitForGameStart() {
         new Thread(() -> {
             try {
@@ -51,18 +52,19 @@ public class LoadingScreen extends JFrame {
                 while ((message = in.readLine()) != null) {
                     if (message.startsWith("GAME_START")) {
                         SwingUtilities.invokeLater(() -> {
-                            new BoardPage(out, in).setVisible(true); // BoardPage로 이동
+                            new BoardPage(out, in).setVisible(true); // 보드 페이지로 이동
                             dispose(); // 로딩 화면 닫기
                         });
                         break;
                     }
                 }
             } catch (IOException e) {
-                JOptionPane.showMessageDialog(this, "Disconnected from server.");
                 e.printStackTrace();
-                System.exit(0);
+                JOptionPane.showMessageDialog(null, "Error: Connection lost.");
+                dispose();
             }
         }).start();
     }
+
 
 }

@@ -33,31 +33,21 @@ public class RoomThread implements Runnable {
         }
     }
 
-    public synchronized void processMove(PrintWriter playerOut, String move) {
+    public synchronized void processMove(PrintWriter out, String move) {
         String[] parts = move.split(",");
-        if (parts.length != 2) {
-            playerOut.println("ERROR Invalid move format.");
+        int row = Integer.parseInt(parts[0]);
+        int col = Integer.parseInt(parts[1]);
+
+        if (!gameLogic.makeMove(row, col)) {
+            out.println("ERROR Invalid move.");
             return;
         }
 
-        int x, y;
-        try {
-            x = Integer.parseInt(parts[0]);
-            y = Integer.parseInt(parts[1]);
-        } catch (NumberFormatException e) {
-            playerOut.println("ERROR Invalid move coordinates.");
-            return;
-        }
+        char currentPlayer = gameLogic.getCurrentPlayer();
+        broadcast("MOVE " + row + "," + col + " " + currentPlayer);
 
-        if (!gameLogic.makeMove(x, y)) {
-            playerOut.println("ERROR Invalid move.");
-            return;
-        }
-
-        broadcast("MOVE " + x + "," + y + " " + gameLogic.getCurrentPlayer());
-
-        if (gameLogic.checkWin(x, y)) {
-            broadcast("RESULT " + gameLogic.getCurrentPlayer() + " wins!");
+        if (gameLogic.checkWin(row, col)) {
+            broadcast("RESULT " + currentPlayer + " wins!");
             resetRoom();
         } else if (gameLogic.isBoardFull()) {
             broadcast("RESULT Draw!");
@@ -67,6 +57,7 @@ public class RoomThread implements Runnable {
             broadcast("TURN " + gameLogic.getCurrentPlayer());
         }
     }
+
 
     private void broadcast(String message) {
         for (PrintWriter client : clients) {
