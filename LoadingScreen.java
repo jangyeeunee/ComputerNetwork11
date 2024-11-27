@@ -1,5 +1,6 @@
 import javax.swing.*;
 import java.awt.*;
+import java.io.*;
 
 /**
  * 로딩 화면 클래스
@@ -7,14 +8,20 @@ import java.awt.*;
  */
 public class LoadingScreen extends JFrame {
 
-    public LoadingScreen(String message) {
+    private PrintWriter out;
+    private BufferedReader in;
+
+    public LoadingScreen(PrintWriter out,BufferedReader in) {
+        this.out=out;
+        this.in=in;
+
         // 프레임 설정
         setTitle("Tic Tac Toe - Loading");
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 
         // 로딩 메시지 라벨
-        JLabel loadingLabel = new JLabel(message, SwingConstants.CENTER);
+        JLabel loadingLabel = new JLabel("Loading... Waiting for another player", SwingConstants.CENTER);
         loadingLabel.setFont(new Font("Arial", Font.BOLD, 20));
         add(loadingLabel, BorderLayout.NORTH);
 
@@ -33,45 +40,29 @@ public class LoadingScreen extends JFrame {
         setLocationRelativeTo(null); // 화면 중앙에 표시
         setVisible(true);
 
-        // 로딩 프로세스 시뮬레이션
-        simulateLoading();
+        // 서버 메세지 대기
+        WaitForGameStart();
     }
 
-    /**
-     * 로딩 과정을 시뮬레이션하는 메서드
-     */
-    private void simulateLoading() {
-        // 백그라운드 스레드에서 실행하여 GUI 프리징 방지
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    // 로딩 시간 시뮬레이션 (ex 서버 연결 대기)
-                    Thread.sleep(3000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-
-                // 로딩 완료 후 다음 화면으로 전환
-                SwingUtilities.invokeLater(new Runnable() {
-                    @Override
-                    public void run() {
-                        // 로딩 화면 닫기
-                        dispose();
-                        // 게임 화면 또는 다음 단계로 이동
-                        showGameScreen();
+    private void WaitForGameStart() {
+        new Thread(() -> {
+            try {
+                String message;
+                while ((message = in.readLine()) != null) {
+                    if (message.startsWith("GAME_START")) {
+                        SwingUtilities.invokeLater(() -> {
+                            new BoardPage(out, in).setVisible(true); // BoardPage로 이동
+                            dispose(); // 로딩 화면 닫기
+                        });
+                        break;
                     }
-                });
+                }
+            } catch (IOException e) {
+                JOptionPane.showMessageDialog(this, "Disconnected from server.");
+                e.printStackTrace();
+                System.exit(0);
             }
         }).start();
     }
 
-    /**
-     * 로딩 완료 후 게임 화면으로 전환하는 메서드 (현재는 메시지 표시)
-     */
-    private void showGameScreen() {
-        JOptionPane.showMessageDialog(null, "Loading complete! Game will start now.");
-        // 여기서 게임 화면을 초기화
-
-    }
 }
