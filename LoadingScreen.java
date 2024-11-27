@@ -30,10 +30,6 @@ public class LoadingScreen extends JFrame {
         progressBar.setIndeterminate(true);
         add(progressBar, BorderLayout.CENTER);
 
-        // 추가 안내 메시지
-//        JLabel tipLabel = new JLabel("Please wait while we prepare the game...", SwingConstants.CENTER);
-//        tipLabel.setFont(new Font("Arial", Font.ITALIC, 14));
-//        add(tipLabel, BorderLayout.SOUTH);
 
         // 프레임 설정 마무리
         setSize(400, 200);
