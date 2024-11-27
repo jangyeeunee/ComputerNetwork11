@@ -104,31 +104,42 @@ public class BoardPage extends JFrame {
                 String message;
                 while ((message = in.readLine()) != null) {
                     String finalMessage = message; // 람다 내에서 사용할 임시 변수 생성
+
+                    // MOVE : 특정 위치에 플레이어의 기호(X 또는 O)를 그림
+                    // 메세지 형식 : "MOVE row,col player"
                     if (finalMessage.startsWith("MOVE")) {
                         String[] parts = finalMessage.split(" ");
                         String[] coords = parts[1].split(",");
-                        int row = Integer.parseInt(coords[0]);
-                        int col = Integer.parseInt(coords[1]);
+                        int row = Integer.parseInt(coords[0]);  // 행 좌표
+                        int col = Integer.parseInt(coords[1]);  // 열 좌표
                         char player = parts[2].charAt(0);
 
-                        gameLogic.getBoard()[row][col] = player; // 보드 업데이트
+                        gameLogic.getBoard()[row][col] = player; // 게임 보드 상태  업데이트
                         SwingUtilities.invokeLater(() -> boardPanel.repaint());
-                    } else if (finalMessage.startsWith("TURN")) {
-                        String nextPlayer = finalMessage.split(" ")[1];
+                    }
+                    // TURN : 다음 플레이어의 차례를 업데이트
+                    // 메세지 형식 : "TURN player"
+                    else if (finalMessage.startsWith("TURN")) {
+                        String nextPlayer = finalMessage.split(" ")[1];  // 다음 플레이어 정보
+                        // UI를 갱신하여 다음 플레이어의 턴 표시
                         SwingUtilities.invokeLater(() ->
                                 statusLabel.setText("Player " + nextPlayer + "'s Turn")
                         );
-                    } else if (finalMessage.startsWith("RESULT")) {
+                    }
+                    // RESULT : 게임 결과 ( 승리 또는 무승부) 표시
+                    // 메세지 형식: "RESULT message"
+                    else if (finalMessage.startsWith("RESULT")) {
                         SwingUtilities.invokeLater(() ->
                                 JOptionPane.showMessageDialog(this, finalMessage.substring(7))
                         );
+                        // 결과 표시 후 loop 종료
                         break;
                     }
                 }
             } catch (IOException e) {
                 e.printStackTrace();
             }
-        }).start();
+        }).start(); // 스레드 시작
     }
 
 

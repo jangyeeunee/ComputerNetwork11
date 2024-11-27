@@ -33,7 +33,7 @@ public class GameLogic {
 
     public void resetBoard() {
         board = new char[3][3];
-        currentPlayer = 'X';
+        currentPlayer = 'X'; // 초기 플레이어
     }
 
     public boolean makeMove(int row, int col) {
