@@ -145,8 +145,12 @@ public class BoardPage extends JFrame {
                     // 메세지 형식: "RESULT message"
                     else if (finalMessage.startsWith("RESULT")) {
                         SwingUtilities.invokeLater(() -> {
-                            JOptionPane.showMessageDialog(this, finalMessage.substring(7));
-                            restartButton.setVisible(true); // 게임 결과 후 버튼 보이기
+                            String resultMessage = finalMessage.substring(7); // 승리 또는 무승부 메시지
+                            JOptionPane.showMessageDialog(this, resultMessage);
+
+                            String winner = gameLogic.updateScoreAndReturnWinner();
+                            updateScoreDisplay(winner);
+                            restartButton.setVisible(true); // 게임 결과 후 다시하기 버튼 보이기
                             bottomPanel.revalidate(); // 레이아웃 갱신
                             bottomPanel.repaint();
                         });
@@ -158,7 +162,7 @@ public class BoardPage extends JFrame {
         }).start(); // 스레드 시작
     }
 
-    private void updateScoreDisplay() {
+    private void updateScoreDisplay(String winner) {
         scoreLabel.setText("Player 1 (X): " + gameLogic.getPlayer1Score() + " | Player 2 (O): " + gameLogic.getPlayer2Score());
     }
 
