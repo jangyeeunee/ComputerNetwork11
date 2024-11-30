@@ -2,7 +2,9 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.PrintWriter;
 
 public class BoardPage extends JFrame {
     private GameLogic gameLogic = new GameLogic(); // 게임 로직 객체
@@ -130,10 +132,12 @@ public class BoardPage extends JFrame {
                     // 메세지 형식: "RESULT message"
                     else if (finalMessage.startsWith("RESULT")) {
                         SwingUtilities.invokeLater(() ->
-                                JOptionPane.showMessageDialog(this, finalMessage.substring(7))
+
+                        {
+                            JOptionPane.showMessageDialog(this, finalMessage.substring(7));
+                            dispose();
+                        }
                         );
-                        // 결과 표시 후 loop 종료
-                        break;
                     }
                 }
             } catch (IOException e) {
