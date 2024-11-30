@@ -194,27 +194,28 @@ public class BoardPage extends JFrame {
             scoreLabel.setText("Error updating score");
         }
     }
+        // 게임 리셋 메서드 수정
     private void resetGame() {
+        gameCount++;
         gameLogic.resetBoard(); // 보드 초기화
-    
+
         // 게임 번호가 짝수이면 O가 먼저 시작하고, 홀수이면 X가 먼저 시작
         if (gameCount % 2 == 0) {
-            gameLogic = new GameLogic('O'); // 짝수 번째 판에서는 O가 먼저 시작
+            gameLogic.setCurrentPlayer('O'); // 짝수 번째 판에서는 O가 먼저 시작
         } else {
-            gameLogic = new GameLogic('X'); // 홀수 번째 판에서는 X가 먼저 시작
+            gameLogic.setCurrentPlayer('X'); // 홀수 번째 판에서는 X가 먼저 시작
         }
-    
+
         // 게임 시작 시 현재 플레이어 상태 업데이트
         statusLabel.setText("Player " + gameLogic.getCurrentPlayer() + "'s Turn");
-    
+
         restartButton.setVisible(false); // 게임 리셋 후 버튼 숨기기
         bottomPanel.revalidate(); // 레이아웃 갱신
         bottomPanel.repaint();
         boardPanel.repaint();
-    
-        // 게임 번호 증가
-        gameCount++;
+
     }
+
     private char getFirstPlayer() {
         return gameCount % 2 == 0 ? 'O' : 'X'; // 짝수 판은 O, 홀수 판은 X가 먼저 시작
     }

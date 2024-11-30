@@ -122,4 +122,4 @@ public class GameEntryScreen extends JFrame {
             JOptionPane.showMessageDialog(null, "Unable to connect to the server.");
         }
     }
-    }
+}

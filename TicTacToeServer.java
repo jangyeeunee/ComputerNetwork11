@@ -210,6 +210,7 @@ public class TicTacToeServer {
                 resetRoom();
             } else {
                 gameLogic.switchPlayer();
+                currentPlayer = String.valueOf(gameLogic.getCurrentPlayer());
                 broadcast("TURN " + gameLogic.getCurrentPlayer());
             }
         }
