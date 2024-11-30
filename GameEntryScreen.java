@@ -1,7 +1,6 @@
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.awt.event.*;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -16,18 +15,19 @@ public class GameEntryScreen extends JFrame {
 
     private PrintWriter out; // 서버로 메세지를 전송하는 객체
     private BufferedReader in; // 서버로부터 메세지를 수신하는 객체
-
+    private Socket socket;
     private JTextField roomIdField; // 방 ID 입력 필드
 
-    public GameEntryScreen(PrintWriter out, BufferedReader in) {
+    public GameEntryScreen(PrintWriter out, BufferedReader in, Socket socket) {
 
         // 서버 스트림 객체를 클래스 변수에 저장
         this.out = out;
         this.in = in;
+        this.socket = socket;
 
         // 프레임 설정
         setTitle("Tic Tac Toe - Game Entry");
-        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setDefaultCloseOperation(DO_NOTHING_ON_CLOSE); // 종료 시 직접 처리하도록 설정
         setLayout(new BorderLayout());
 
         // 제목 라벨 설정
@@ -69,6 +69,35 @@ public class GameEntryScreen extends JFrame {
             }
         });
 
+        // 창 닫을 때 연결 종료 및 클라이언트 종료
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                // 종료 작업을 별도의 스레드에서 처리
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            out.println("LEAVE");
+                            out.flush(); // 메시지가 즉시 전송되도록 보장
+        
+                            // 서버로의 출력 스트림 닫기
+                            out.close();
+                            // 서버로부터의 입력 스트림 닫기
+                            in.close();
+                            // 소켓 연결 종료
+                            socket.close();
+                        } catch (IOException ex) {
+                            ex.printStackTrace();
+                        } finally {
+                            dispose();  // 창을 닫고
+                            System.exit(0);  // 프로그램 종료
+                        }
+                    }
+                }).start();  // 새로운 스레드 시작
+            }
+        });
+        
         // 프레임 설정 마무리
         setSize(400, 300);
         setLocationRelativeTo(null); // 화면 중앙에 표시
@@ -99,14 +128,6 @@ public class GameEntryScreen extends JFrame {
             JOptionPane.showMessageDialog(this, "Please enter a valid room ID.");
         }
     }
-    /**
-     * 로딩 화면을 표시하는 메서드
-     * @param message 로딩 화면에 표시할 메시지
-     */
-    private void showLoadingScreen(String message) {
-        new LoadingScreen(out,in,message);
-        this.dispose(); // 입장 화면 닫기
-    }
 
     public static void main(String[] args) {
         try {
@@ -116,7 +137,7 @@ public class GameEntryScreen extends JFrame {
             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
             // GUI 생성
-            SwingUtilities.invokeLater(() -> new GameEntryScreen(out, in));
+            SwingUtilities.invokeLater(() -> new GameEntryScreen(out, in, socket));
         } catch (IOException e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(null, "Unable to connect to the server.");

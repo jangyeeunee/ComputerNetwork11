@@ -12,10 +12,11 @@ public class LoadingScreen extends JFrame {
 
     private PrintWriter out;
     private BufferedReader in;
+    private Thread waitThread; // 대기 스레드 참조
 
-    public LoadingScreen(PrintWriter out,BufferedReader in,String message) {
-        this.out=out;
-        this.in=in;
+    public LoadingScreen(PrintWriter out, BufferedReader in, String message) {
+        this.out = out;
+        this.in = in;
 
         // 프레임 설정
         setTitle("Tic Tac Toe - Loading");
@@ -32,7 +33,6 @@ public class LoadingScreen extends JFrame {
         progressBar.setIndeterminate(true);
         add(progressBar, BorderLayout.CENTER);
 
-
         // 프레임 설정 마무리
         setSize(400, 200);
         setLocationRelativeTo(null); // 화면 중앙에 표시
@@ -44,7 +44,7 @@ public class LoadingScreen extends JFrame {
 
     // 서버 메시지에 따라 BoardPage로 전환
     private void WaitForGameStart() {
-        new Thread(() -> {
+        waitThread = new Thread(() -> {
             try {
                 String message;
                 while ((message = in.readLine()) != null) {
@@ -61,8 +61,22 @@ public class LoadingScreen extends JFrame {
                 JOptionPane.showMessageDialog(null, "Error: Connection lost.");
                 dispose();
             }
-        }).start();
+        });
+        waitThread.start();
     }
 
+    // 창 닫을 때 스레드 종료
+    @Override
+    public void dispose() {
+        if (waitThread != null) {
+            waitThread.interrupt(); // 스레드 중지
+            try {
+                waitThread.join(); // 스레드 종료를 기다림
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        super.dispose(); // 부모 클래스의 dispose 호출
+    }
 
 }

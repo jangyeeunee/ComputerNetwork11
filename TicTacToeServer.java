@@ -61,6 +61,9 @@ public class TicTacToeServer {
                         case "MOVE":
                             handleMove(argument);
                             break;
+                        case "LEAVE":
+                            leaveRoom();
+                            break;    
                         default:
                             out.println("ERROR Unknown command.");
                             break;
@@ -78,6 +81,20 @@ public class TicTacToeServer {
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
+            }
+        }
+        private void leaveRoom() {
+            if (joinedRoom != null) {
+                joinedRoom.removeClient(out);
+                joinedRoom = null;
+                out.println("LEFT"); // 클라이언트에게 방에서 나갔음을 알려줌
+                try {
+                    socket.close(); // 클라이언트 소켓 종료
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            } else {
+                out.println("ERROR You are not in a room.");
             }
         }
 
@@ -125,6 +142,7 @@ public class TicTacToeServer {
                 out.println("ERROR You are not in a room.");
             }
         }
+        
     }
 
     // 방의 상태를 관리하는 클래스

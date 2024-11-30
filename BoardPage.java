@@ -119,12 +119,13 @@ public class BoardPage extends JFrame {
             }
         }
     }
+    private boolean isRunning = true; // 스레드 실행 여부를 추적
 
     private void startListeningForMoves() {
         new Thread(() -> {
             try {
                 String message;
-                while ((message = in.readLine()) != null) {
+                while (isRunning && (message = in.readLine()) != null) {
                     String finalMessage = message; // 람다 내에서 사용할 임시 변수 생성
     
                     // MOVE : 특정 위치에 플레이어의 기호(X 또는 O)를 그림
@@ -169,6 +170,12 @@ public class BoardPage extends JFrame {
             }
         }).start(); // 스레드 시작
     } 
+    @Override
+    public void dispose() {
+        isRunning = false; // 스레드 종료 플래그 설정
+        super.dispose(); // 부모 클래스의 dispose 호출
+        System.exit(0);
+    }
     // 게임 결과 처리 및 점수 갱신
     private void updateScoreDisplay(String resultMessage) {
         try {
