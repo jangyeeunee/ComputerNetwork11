@@ -10,17 +10,18 @@ public class BoardPage extends JFrame {
     private GameLogic gameLogic = new GameLogic(); // 게임 로직 객체
     private PrintWriter out;
     private BufferedReader in;
-
     private JLabel statusLabel; // 현재 상태 표시 라벨
     private JLabel scoreLabel;  // 점수 표시 라벨
-    private JPanel boardPanel;  // 게임 보드 패널
+    private JPanel boardPanel;  // 게임 보드 
+    private JButton restartButton; // 다시하기 버튼
+    private JPanel bottomPanel; // 점수와 다시하기 버튼을 담을 패널
 
     public BoardPage(PrintWriter out, BufferedReader in) {
         this.out = out;
         this.in = in;
 
         setTitle("Tic Tac Toe");
-        setSize(500, 550);
+        setSize(500, 600);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 
@@ -49,11 +50,23 @@ public class BoardPage extends JFrame {
 
         add(boardPanel, BorderLayout.CENTER);
 
+        // 하단 패널을 만들고 점수와 다시하기 버튼을 넣음
+        bottomPanel = new JPanel();
+        bottomPanel.setLayout(new BorderLayout());
+
+        // 다시 하기 버튼 추가 
+        restartButton = new JButton("Restart Game");
+        restartButton.setVisible(false);  // 기본적으로 보이지 않음
+        restartButton.addActionListener(e -> resetGame());
+        bottomPanel.add(restartButton, BorderLayout.SOUTH);
+
         // 하단 점수 표시
         scoreLabel = new JLabel("Player 1 (X): 0 | Player 2 (O): 0");
         scoreLabel.setHorizontalAlignment(SwingConstants.CENTER);
         scoreLabel.setFont(new Font("Arial", Font.PLAIN, 18));
-        add(scoreLabel, BorderLayout.SOUTH);
+        bottomPanel.add(scoreLabel, BorderLayout.NORTH);
+
+        add(bottomPanel, BorderLayout.SOUTH);
 
         startListeningForMoves(); // 서버 메시지 처리
     }
@@ -124,20 +137,19 @@ public class BoardPage extends JFrame {
                     else if (finalMessage.startsWith("TURN")) {
                         String nextPlayer = finalMessage.split(" ")[1];  // 다음 플레이어 정보
                         // UI를 갱신하여 다음 플레이어의 턴 표시
-                        SwingUtilities.invokeLater(() ->
+                        SwingUtilities.invokeLater(() -> 
                                 statusLabel.setText("Player " + nextPlayer + "'s Turn")
                         );
                     }
                     // RESULT : 게임 결과 ( 승리 또는 무승부) 표시
                     // 메세지 형식: "RESULT message"
                     else if (finalMessage.startsWith("RESULT")) {
-                        SwingUtilities.invokeLater(() ->
-
-                        {
+                        SwingUtilities.invokeLater(() -> {
                             JOptionPane.showMessageDialog(this, finalMessage.substring(7));
-                            dispose();
-                        }
-                        );
+                            restartButton.setVisible(true); // 게임 결과 후 버튼 보이기
+                            bottomPanel.revalidate(); // 레이아웃 갱신
+                            bottomPanel.repaint();
+                        });
                     }
                 }
             } catch (IOException e) {
@@ -146,9 +158,6 @@ public class BoardPage extends JFrame {
         }).start(); // 스레드 시작
     }
 
-
-
-
     private void updateScoreDisplay() {
         scoreLabel.setText("Player 1 (X): " + gameLogic.getPlayer1Score() + " | Player 2 (O): " + gameLogic.getPlayer2Score());
     }
@@ -156,6 +165,9 @@ public class BoardPage extends JFrame {
     private void resetGame() {
         gameLogic.resetBoard();
         statusLabel.setText("Player X's Turn");
+        restartButton.setVisible(false); // 게임 리셋 후 버튼 숨기기
+        bottomPanel.revalidate(); // 레이아웃 갱신
+        bottomPanel.repaint();
         boardPanel.repaint();
     }
 }
