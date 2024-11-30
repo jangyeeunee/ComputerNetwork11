@@ -131,10 +131,16 @@ public class TicTacToeServer {
         private String roomId; // 방 ID
         private List<PrintWriter> clients = new ArrayList<>(); // 방에 연결된 클라이언트 목록
         private GameLogic gameLogic = new GameLogic(); // 게임 로직 관리 객체
-        private int currentPlayer = 0; // 현재 차례의 플레이어 인덱스
+        private String currentPlayer = "X"; // 초기 플레이어는 X로 설정하도록 수정
+        private int player1Score = 0;
+        private int player2Score = 0;
 
         public RoomThread(String roomId) {
             this.roomId = roomId;
+        }
+        // 플레이어를 전환하는 메서드
+        public void switchPlayer() {
+            currentPlayer = (currentPlayer.equals("X")) ? "O" : "X";
         }
 
         // 클라이언트를 방에 추가하는 메서드
@@ -150,7 +156,7 @@ public class TicTacToeServer {
             if (clients.size() == 2) {
                 broadcast("GAME_START X");
                 System.out.println("Room ID: " + roomId + " - Game started");
-                broadcast("TURN X");
+                broadcast("TURN " + currentPlayer);
             }
             return true;
         }
@@ -162,7 +168,7 @@ public class TicTacToeServer {
                 System.out.println("Room ID: " + roomId + " - All clients disconnected");
             }
         }
-
+        
         // MOVE 명령을 처리하는 메서드
         public synchronized void processMove(PrintWriter out, String move) {
             String[] parts = move.split(",");
@@ -178,10 +184,15 @@ public class TicTacToeServer {
             broadcast("MOVE " + row + "," + col + " " + currentPlayerChar);
 
             if (gameLogic.checkWin(row, col)) {
-                broadcast("RESULT " + currentPlayerChar + " wins!");
+                if(currentPlayerChar == 'X'){
+                    player1Score++;
+                } else{
+                    player2Score++;
+                }
+                broadcast("RESULT " + currentPlayerChar + " wins! Score: X=" + player1Score + ", O=" + player2Score);
                 resetRoom();
             } else if (gameLogic.isBoardFull()) {
-                broadcast("RESULT Draw!");
+                broadcast("RESULT Draw! Score: X=" + player1Score + ", O=" + player2Score);
                 resetRoom();
             } else {
                 gameLogic.switchPlayer();

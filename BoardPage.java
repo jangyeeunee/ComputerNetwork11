@@ -15,6 +15,9 @@ public class BoardPage extends JFrame {
     private JPanel boardPanel;  // 게임 보드 
     private JButton restartButton; // 다시하기 버튼
     private JPanel bottomPanel; // 점수와 다시하기 버튼을 담을 패널
+    private int player1Score = 0;  // Player 1 (X) 점수
+    private int player2Score = 0;  // Player 2 (O) 점수
+
 
     public BoardPage(PrintWriter out, BufferedReader in) {
         this.out = out;
@@ -77,7 +80,10 @@ public class BoardPage extends JFrame {
         int col = e.getX() / cellWidth;
         int row = e.getY() / cellHeight;
 
-        out.println("MOVE " + row + "," + col); // 서버로 MOVE 전송
+        // 클릭한 셀이 보드 범위 내에 있는지 체크
+        if (row >= 0 && row < 3 && col >= 0 && col < 3) {
+            out.println("MOVE " + row + "," + col); // 서버로 MOVE 전송
+        } 
     }
 
     private void drawBoard(Graphics2D g2) {
@@ -119,39 +125,40 @@ public class BoardPage extends JFrame {
                 String message;
                 while ((message = in.readLine()) != null) {
                     String finalMessage = message; // 람다 내에서 사용할 임시 변수 생성
-
+    
                     // MOVE : 특정 위치에 플레이어의 기호(X 또는 O)를 그림
-                    // 메세지 형식 : "MOVE row,col player"
                     if (finalMessage.startsWith("MOVE")) {
                         String[] parts = finalMessage.split(" ");
                         String[] coords = parts[1].split(",");
                         int row = Integer.parseInt(coords[0]);  // 행 좌표
                         int col = Integer.parseInt(coords[1]);  // 열 좌표
                         char player = parts[2].charAt(0);
-
-                        gameLogic.getBoard()[row][col] = player; // 게임 보드 상태  업데이트
+    
+                        gameLogic.getBoard()[row][col] = player; // 게임 보드 상태 업데이트
                         SwingUtilities.invokeLater(() -> boardPanel.repaint());
                     }
                     // TURN : 다음 플레이어의 차례를 업데이트
-                    // 메세지 형식 : "TURN player"
                     else if (finalMessage.startsWith("TURN")) {
                         String nextPlayer = finalMessage.split(" ")[1];  // 다음 플레이어 정보
-                        // UI를 갱신하여 다음 플레이어의 턴 표시
                         SwingUtilities.invokeLater(() -> 
                                 statusLabel.setText("Player " + nextPlayer + "'s Turn")
                         );
                     }
                     // RESULT : 게임 결과 ( 승리 또는 무승부) 표시
-                    // 메세지 형식: "RESULT message"
                     else if (finalMessage.startsWith("RESULT")) {
                         SwingUtilities.invokeLater(() -> {
                             String resultMessage = finalMessage.substring(7); // 승리 또는 무승부 메시지
                             JOptionPane.showMessageDialog(this, resultMessage);
-
-                            String winner = gameLogic.updateScoreAndReturnWinner();
-                            updateScoreDisplay(winner);
-                            restartButton.setVisible(true); // 게임 결과 후 다시하기 버튼 보이기
-                            bottomPanel.revalidate(); // 레이아웃 갱신
+    
+                            // 점수 업데이트
+                            updateScoreDisplay(resultMessage);
+                            
+                            
+                            // 게임 종료 후에만 restartButton을 보이게 합니다.
+                            restartButton.setVisible(true); // restartButton을 보이게 설정
+                            
+                            // 레이아웃 갱신
+                            bottomPanel.revalidate(); 
                             bottomPanel.repaint();
                         });
                     }
@@ -160,18 +167,53 @@ public class BoardPage extends JFrame {
                 e.printStackTrace();
             }
         }).start(); // 스레드 시작
+    } 
+    // 게임 결과 처리 및 점수 갱신
+    private void updateScoreDisplay(String resultMessage) {
+        try {
+            if (resultMessage.contains("Score: ")) {
+                // "Score: X=1, O=2" 형태의 문자열에서 점수 부분만 추출
+                String[] parts = resultMessage.split("Score: ")[1].split(" ");
+                
+                // "X=1," 형태에서 숫자만 추출 (쉼표 제거)
+                String player1ScoreStr = parts[0].split("=")[1].replace(",", "").trim();
+                String player2ScoreStr = parts[1].split("=")[1].replace(",", "").trim();
+                
+                // 점수 업데이트
+                player1Score = Integer.parseInt(player1ScoreStr);
+                player2Score = Integer.parseInt(player2ScoreStr);
+        
+                // 점수 표시 라벨 갱신
+                scoreLabel.setText("Player 1 (X): " + player1Score + " | Player 2 (O): " + player2Score);
+            } else {
+                scoreLabel.setText("Invalid score format");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            scoreLabel.setText("Error updating score");
+        }
     }
-
-    private void updateScoreDisplay(String winner) {
-        scoreLabel.setText("Player 1 (X): " + gameLogic.getPlayer1Score() + " | Player 2 (O): " + gameLogic.getPlayer2Score());
-    }
-
+    
+    private boolean isXTurnFirst = true;
     private void resetGame() {
         gameLogic.resetBoard();
-        statusLabel.setText("Player X's Turn");
+        
+        // X가 먼저 시작했으면 O가 먼저 시작하도록, 반대로 바꿔줌
+        if (isXTurnFirst) {
+            gameLogic.setCurrentPlayer('X');
+        } else {
+            gameLogic.setCurrentPlayer('O');
+        }
+    
+        // 게임 시작 시 현재 플레이어 상태 업데이트
+        statusLabel.setText("Player " + gameLogic.getCurrentPlayer() + "'s Turn");
+        
         restartButton.setVisible(false); // 게임 리셋 후 버튼 숨기기
         bottomPanel.revalidate(); // 레이아웃 갱신
         bottomPanel.repaint();
         boardPanel.repaint();
+        
+        // 'X'와 'O'의 순서를 바꿈
+        isXTurnFirst = !isXTurnFirst;
     }
 }

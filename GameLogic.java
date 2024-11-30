@@ -1,26 +1,14 @@
 public class GameLogic {
     private char[][] board;       // 3x3 틱택토 보드
     private char currentPlayer;   // 현재 플레이어 (X 또는 O)
-    private int player1Score;     // Player 1 (X) 점수
-    private int player2Score;     // Player 2 (O) 점수
 
     public GameLogic() {
         board = new char[3][3];
-        currentPlayer = 'X';
-        player1Score = 0;
-        player2Score = 0;
+        currentPlayer = 'X'; // 초기 플레이어를 X로 설정
     }
 
     public char getCurrentPlayer() {
         return currentPlayer;
-    }
-
-    public int getPlayer1Score() {
-        return player1Score;
-    }
-
-    public int getPlayer2Score() {
-        return player2Score;
     }
 
     public char[][] getBoard() {
@@ -33,6 +21,11 @@ public class GameLogic {
 
     public void resetBoard() {
         board = new char[3][3];
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                board[i][j] = '\0';  // 각 셀을 빈 값으로 초기화
+            }
+        }
         currentPlayer = 'X'; // 초기 플레이어
     }
 
@@ -62,22 +55,8 @@ public class GameLogic {
         }
         return true;
     }
-
-    public void incrementPlayer1Score() {
-        player1Score++;
+    public void setCurrentPlayer(char player) {
+        this.currentPlayer = player;
     }
-
-    public void incrementPlayer2Score() {
-        player2Score++;
-    }
-
-    public String updateScoreAndReturnWinner() {
-        if (currentPlayer == 'X') {
-            player1Score++;
-            return "Player 1 (X)";
-        } else {
-            player2Score++;
-            return "Player 2 (O)";
-        }
-    }
+    
 }
