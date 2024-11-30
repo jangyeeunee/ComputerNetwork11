@@ -2,9 +2,9 @@ public class GameLogic {
     private char[][] board;       // 3x3 틱택토 보드
     private char currentPlayer;   // 현재 플레이어 (X 또는 O)
 
-    public GameLogic() {
+    public GameLogic(char firstPlayer) {
         board = new char[3][3];
-        currentPlayer = 'X'; // 초기 플레이어를 X로 설정
+        currentPlayer = firstPlayer;
     }
 
     public char getCurrentPlayer() {
@@ -26,7 +26,6 @@ public class GameLogic {
                 board[i][j] = '\0';  // 각 셀을 빈 값으로 초기화
             }
         }
-        currentPlayer = 'X'; // 초기 플레이어
     }
 
     public boolean makeMove(int row, int col) {
@@ -57,6 +56,5 @@ public class GameLogic {
     }
     public void setCurrentPlayer(char player) {
         this.currentPlayer = player;
-    }
-    
+    } 
 }

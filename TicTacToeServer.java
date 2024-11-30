@@ -11,6 +11,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class TicTacToeServer {
     private static Map<String, RoomThread> rooms = new ConcurrentHashMap<>();
+    
 
     public static void main(String[] args) {
         try (ServerSocket serverSocket = new ServerSocket(1234)) {
@@ -130,13 +131,26 @@ public class TicTacToeServer {
     static class RoomThread implements Runnable {
         private String roomId; // 방 ID
         private List<PrintWriter> clients = new ArrayList<>(); // 방에 연결된 클라이언트 목록
-        private GameLogic gameLogic = new GameLogic(); // 게임 로직 관리 객체
+        private GameLogic gameLogic; // 게임 로직 관리 객체
         private String currentPlayer = "X"; // 초기 플레이어는 X로 설정하도록 수정
         private int player1Score = 0;
         private int player2Score = 0;
+        private int gameCount = 0;
 
         public RoomThread(String roomId) {
             this.roomId = roomId;
+            // 게임 로직 객체 초기화 시 currentPlayer 반영
+            initializeGameLogic();
+        }
+
+        // 게임 로직을 초기화하는 메서드
+        private void initializeGameLogic() {
+            if (gameCount % 2 == 0) {
+                currentPlayer = "O"; // 짝수 번째 게임에서는 O가 먼저 시작
+            } else {
+                currentPlayer = "X"; // 홀수 번째 게임에서는 X가 먼저 시작
+            }
+            gameLogic = new GameLogic(currentPlayer.charAt(0));  // 'X' 또는 'O'를 첫 번째 플레이어로 설정
         }
         // 플레이어를 전환하는 메서드
         public void switchPlayer() {
@@ -209,7 +223,11 @@ public class TicTacToeServer {
 
         // 게임을 초기화하는 메서드
         private void resetRoom() {
-            gameLogic.resetBoard();
+             gameLogic.resetBoard();
+            // 게임 번호 증가 후, 플레이어 순서 변경
+            gameCount++;
+            initializeGameLogic(); // 게임 로직 초기화
+            broadcast("TURN " + currentPlayer);
             broadcast("RESET");
         }
 

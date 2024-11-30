@@ -7,7 +7,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 
 public class BoardPage extends JFrame {
-    private GameLogic gameLogic = new GameLogic(); // 게임 로직 객체
+    private GameLogic gameLogic = new GameLogic(getFirstPlayer()); // 게임 로직 객체
     private PrintWriter out;
     private BufferedReader in;
     private JLabel statusLabel; // 현재 상태 표시 라벨
@@ -17,6 +17,7 @@ public class BoardPage extends JFrame {
     private JPanel bottomPanel; // 점수와 다시하기 버튼을 담을 패널
     private int player1Score = 0;  // Player 1 (X) 점수
     private int player2Score = 0;  // Player 2 (O) 점수
+    private int gameCount = 0; // 게임 번호를 추적하는 변수
 
 
     public BoardPage(PrintWriter out, BufferedReader in) {
@@ -193,27 +194,28 @@ public class BoardPage extends JFrame {
             scoreLabel.setText("Error updating score");
         }
     }
-    
-    private boolean isXTurnFirst = true;
     private void resetGame() {
-        gameLogic.resetBoard();
-        
-        // X가 먼저 시작했으면 O가 먼저 시작하도록, 반대로 바꿔줌
-        if (isXTurnFirst) {
-            gameLogic.setCurrentPlayer('X');
+        gameLogic.resetBoard(); // 보드 초기화
+    
+        // 게임 번호가 짝수이면 O가 먼저 시작하고, 홀수이면 X가 먼저 시작
+        if (gameCount % 2 == 0) {
+            gameLogic = new GameLogic('O'); // 짝수 번째 판에서는 O가 먼저 시작
         } else {
-            gameLogic.setCurrentPlayer('O');
+            gameLogic = new GameLogic('X'); // 홀수 번째 판에서는 X가 먼저 시작
         }
     
         // 게임 시작 시 현재 플레이어 상태 업데이트
         statusLabel.setText("Player " + gameLogic.getCurrentPlayer() + "'s Turn");
-        
+    
         restartButton.setVisible(false); // 게임 리셋 후 버튼 숨기기
         bottomPanel.revalidate(); // 레이아웃 갱신
         bottomPanel.repaint();
         boardPanel.repaint();
-        
-        // 'X'와 'O'의 순서를 바꿈
-        isXTurnFirst = !isXTurnFirst;
+    
+        // 게임 번호 증가
+        gameCount++;
+    }
+    private char getFirstPlayer() {
+        return gameCount % 2 == 0 ? 'O' : 'X'; // 짝수 판은 O, 홀수 판은 X가 먼저 시작
     }
 }

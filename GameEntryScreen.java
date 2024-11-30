@@ -13,8 +13,6 @@ import java.net.Socket;
  * 사용자에게 방 생성 또는 방 참가 옵션 제공
  */
 public class GameEntryScreen extends JFrame {
-    private boolean isMyTurn = false; // 현재 클라이언트의 차례 여부
-    private String playerSymbol;     // 클라이언트의 심볼 ('X' 또는 'O')
 
     private PrintWriter out; // 서버로 메세지를 전송하는 객체
     private BufferedReader in; // 서버로부터 메세지를 수신하는 객체
